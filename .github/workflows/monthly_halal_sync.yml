@@ -1,0 +1,43 @@
+name: Monthly Halal Sync
+
+# Pulls the latest base halal_list.csv from the external halal source repo and
+# commits it into the private market repo at data/dim/halal_list.csv.
+# Triggered monthly by cron-jobs.org via repository_dispatch (no GitHub schedule).
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [halal-sync]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout private market code repo
+        uses: actions/checkout@v4
+        with:
+          repository: noveljack/market
+          token: $ secrets.MARKET_REPO_PAT 
+          ref: main
+
+      - name: Fetch halal_list from source repo
+        env:
+          HALAL_REPO_PAT: $ secrets.HALAL_REPO_PAT 
+          HALAL_REPO: $ vars.HALAL_REPO 
+          HALAL_FILE: $ vars.HALAL_FILE || 'halal_list.csv' 
+        run: |
+          API_BASE="https://api.github.com/repos/"
+          SRC_URL="${API_BASE}${HALAL_REPO}/contents/${HALAL_FILE}"
+          mkdir -p data/dim
+          curl -fsSL \
+            -H "Authorization: Bearer ${HALAL_REPO_PAT}" \
+            -H "Accept: application/vnd.github.raw+json" \
+            "$SRC_URL" -o data/dim/halal_list.csv
+
+      - name: Commit updated halal_list if changed
+        run: |
+          git config user.name "noveljack"
+          git config user.email "noveljack001@gmail.com"
+          git add data/dim/halal_list.csv
+          git commit -m "chore(halal): monthly sync of base halal_list" || echo "no changes"
+          git push origin main || true
