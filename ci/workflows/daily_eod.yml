@@ -1,0 +1,77 @@
+name: Daily EOD Pipeline
+
+# Triggered externally by cron-jobs.org via repository_dispatch (no GitHub schedule).
+# Also runnable manually via workflow_dispatch.
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [daily-eod]
+
+concurrency:
+  group: daily-eod
+  cancel-in-progress: false
+
+jobs:
+  eod:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout private market code repo
+        uses: actions/checkout@v4
+        with:
+          repository: noveljack/market
+          token: $ secrets.MARKET_REPO_PAT 
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Configure rclone for Google Drive
+        run: |
+          mkdir -p "$HOME/.config/rclone"
+          printf '%s' "$ secrets.RCLONE_CONFIG " > "$HOME/.config/rclone/rclone.conf"
+          sudo apt-get update && sudo apt-get install -y rclone
+
+      - name: Pull market data from Drive
+        env:
+          RCLONE_REMOTE: $ vars.RCLONE_REMOTE || 'gdrive:market_db' 
+        run: |
+          mkdir -p .drive
+          rclone copy "$RCLONE_REMOTE" .drive --fast-list --transfers 8 --retries 3 || true
+
+      - name: Run daily EOD pipeline
+        env:
+          MARKET_DRIVE_ROOT: $ github.workspace /.drive
+          TELEGRAM_BOT_TOKEN: $ secrets.TELEGRAM_BOT_TOKEN 
+          TELEGRAM_CHAT_ID: $ secrets.TELEGRAM_CHAT_ID 
+          GROQ_API_KEYS: $ secrets.GROQ_API_KEY 
+          OPENROUTER_API_KEYS: $ secrets.OPENROUTER_API_KEY 
+          REDDIT_CLIENT_ID: $ secrets.REDDIT_CLIENT_ID 
+          REDDIT_CLIENT_SECRET: $ secrets.REDDIT_CLIENT_SECRET 
+          DASHBOARD_URL: $ secrets.DASHBOARD_URL 
+        run: |
+          python -m orchestrate.daily
+
+      - name: Push market data back to Drive
+        if: always()
+        env:
+          RCLONE_REMOTE: $ vars.RCLONE_REMOTE || 'gdrive:market_db' 
+        run: |
+          rclone copy .drive "$RCLONE_REMOTE" --fast-list --transfers 8 --retries 3
+
+      - name: Commit reports + news to market repo
+        if: always()
+        run: |
+          git config user.name "noveljack"
+          git config user.email "noveljack001@gmail.com"
+          git add reports data/news 2>/dev/null || true
+          git commit -m "chore(eod): reports for $(date -u +%F)" || echo "nothing to commit"
+          git push origin main || true
