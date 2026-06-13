@@ -1,23 +1,33 @@
 name: g
+
 on:
   workflow_dispatch:
   repository_dispatch:
     types: [g]
-concurrency: { group: g, cancel-in-progress: false }
+
+concurrency:
+  group: g
+  cancel-in-progress: false
+
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
     timeout-minutes: 350
+
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: $ secrets.REPO_NAME 
-          token: $ secrets.REPO_TOKEN 
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
           ref: main
+
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: "3.11"
+
       - run: pip install -r requirements.txt
+
       - run: python ci.py 8
         env:
-          CTX: $ toJSON(secrets) 
-          VARS: $ toJSON(vars) 
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
