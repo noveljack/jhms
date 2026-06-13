@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   repository_dispatch:
     types: [d]     # c.yml -> [c]       |  d.yml -> [d]
-concurrency: { group: b, cancel-in-progress: false }
+concurrency: { group: d, cancel-in-progress: false }
 jobs:
   build:
     runs-on: ubuntu-latest
