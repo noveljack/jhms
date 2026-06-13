@@ -1,0 +1,18 @@
+name: h
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [h]
+concurrency: { group: h, cancel-in-progress: false }
+jobs:
+  halal-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with: { repository: $ secrets.REPO_NAME , token: $ secrets.REPO_TOKEN , ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install -r requirements.txt -r requirements-halal.txt
+      - run: python ci.py 9
+        env: { CTX: $ toJSON(secrets) , VARS: $ toJSON(vars)  }
