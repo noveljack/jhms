@@ -1,22 +1,39 @@
-name: b            # c.yml -> name: c   |  d.yml -> name: d
+name: b
+
 on:
   workflow_dispatch:
   repository_dispatch:
-    types: [b]     # c.yml -> [c]       |  d.yml -> [d]
-concurrency: { group: b, cancel-in-progress: false }
+    types: [b]
+
+concurrency:
+  group: b
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 350
+
     strategy:
       max-parallel: 16
       fail-fast: false
-      matrix: { shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] }
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
     steps:
       - uses: actions/checkout@v4
-        with: { repository: "$ secrets.REPO_NAME ", token: "$ secrets.REPO_TOKEN ", ref: main }
+        with:
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
+          ref: main
+
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: "3.11"
+
       - run: pip install -r requirements.txt
-      - run: python ci.py 2 $ matrix.shard    # c.yml -> 3   |  d.yml -> 4
-        env: { CTX: "$ toJSON(secrets) ", VARS: "$ toJSON(vars) " }
+
+      - run: python ci.py 2 ${{ matrix.shard }}
+        env:
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
