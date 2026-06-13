@@ -1,0 +1,29 @@
+name: F
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [run-5]
+concurrency:
+  group: f
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      max-parallel: 16
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: $ secrets.REPO_NAME 
+          token: $ secrets.REPO_TOKEN 
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: python ci.py 7 $ matrix.shard 
+        env:
+          CTX: $ secrets.CTX 
+          VARS: $ secrets.VARS 
