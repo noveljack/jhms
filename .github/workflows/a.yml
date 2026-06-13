@@ -1,37 +1,67 @@
 name: a
+
 on:
   workflow_dispatch:
   repository_dispatch:
     types: [a]
-concurrency: { group: a, cancel-in-progress: false }
+
+concurrency:
+  group: a
+  cancel-in-progress: false
+
 jobs:
   intraday-collect:
     runs-on: ubuntu-latest
     timeout-minutes: 350
+
     strategy:
       max-parallel: 16
       fail-fast: false
-      matrix: { shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] }
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
     steps:
       - uses: actions/checkout@v4
-        with: { repository: "$ secrets.REPO_NAME ", token: "$ secrets.REPO_TOKEN ", ref: main }
+        with:
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
+          ref: main
+
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: "3.11"
+
       - run: pip install -r requirements.txt
-      - run: python ci.py 7 $ matrix.shard 
-        env: { CTX: "$ toJSON(secrets) ", VARS: "$ toJSON(vars) " }
+
+      - run: python ci.py 7 ${{ matrix.shard }}
+        env:
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
+
   daily-screen:
     needs: intraday-collect
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 350
+
     steps:
       - uses: actions/checkout@v4
-        with: { repository: "$ secrets.REPO_NAME ", token: "$ secrets.REPO_TOKEN ", ref: main }
+        with:
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
+          ref: main
+
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: "3.11"
+
       - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+        with:
+          node-version: "20"
+
       - run: pip install -r requirements.txt -r requirements-halal.txt
+
       - run: python ci.py 1
-        env: { CTX: "$ toJSON(secrets) ", VARS: "$ toJSON(vars) " }
+        env:
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
