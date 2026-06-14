@@ -5,28 +5,32 @@ on:
   repository_dispatch:
     types: [c]
 
-concurrency: { group: c, cancel-in-progress: false }
+concurrency:
+  group: c
+  cancel-in-progress: false
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: $ secrets.REPO_NAME 
-          token: $ secrets.REPO_TOKEN 
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
           ref: main
 
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: "3.11"
 
       - run: pip install -r requirements.txt
 
       - run: python ci.py 11 intraday
         env:
-          CTX: $ toJSON(secrets) 
-          VARS: $ toJSON(vars) 
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
 
   build:
     needs: prepare
@@ -36,21 +40,23 @@ jobs:
     strategy:
       max-parallel: 16
       fail-fast: false
-      matrix: { shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] }
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: $ secrets.REPO_NAME 
-          token: $ secrets.REPO_TOKEN 
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
           ref: main
 
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: "3.11"
 
       - run: pip install -r requirements.txt
 
-      - run: python ci.py 3 $ matrix.shard 
+      - run: python ci.py 3 ${{ matrix.shard }}
         env:
-          CTX: $ toJSON(secrets) 
-          VARS: $ toJSON(vars) 
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
