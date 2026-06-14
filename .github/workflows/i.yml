@@ -23,8 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: <same as b.yml>
-          token: <same as b.yml>
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
           ref: main
 
       - uses: actions/setup-python@v5
@@ -35,5 +35,5 @@ jobs:
 
       - run: python ci.py 10 ${{ matrix.shard }}
         env:
-          CTX: <same as b.yml>
-          VARS: <same as b.yml>
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
