@@ -1,0 +1,39 @@
+name: i
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [i]
+
+concurrency:
+  group: i
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+
+    strategy:
+      max-parallel: 16
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: <same as b.yml>
+          token: <same as b.yml>
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      - run: python ci.py 10 ${{ matrix.shard }}
+        env:
+          CTX: <same as b.yml>
+          VARS: <same as b.yml>
