@@ -13,11 +13,12 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: $ secrets.REPO_NAME 
-          token: $ secrets.REPO_TOKEN 
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
           ref: main
 
       - uses: actions/setup-python@v5
@@ -28,8 +29,8 @@ jobs:
 
       - run: python ci.py 11 eod
         env:
-          CTX: $ toJSON(secrets) 
-          VARS: $ toJSON(vars) 
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
 
   build:
     needs: prepare
@@ -45,8 +46,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: $ secrets.REPO_NAME 
-          token: $ secrets.REPO_TOKEN 
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
           ref: main
 
       - uses: actions/setup-python@v5
@@ -55,7 +56,7 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - run: python ci.py 10 $ matrix.shard 
+      - run: python ci.py 10 ${{ matrix.shard }}
         env:
-          CTX: $ toJSON(secrets) 
-          VARS: $ toJSON(vars) 
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
