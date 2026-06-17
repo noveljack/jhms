@@ -17,8 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.REPO_NAME }}
-          token: ${{ secrets.REPO_TOKEN }}
+          repository: ${{ secrets.REPO }}
+          token: ${{ secrets.TOKEN }}
           ref: main
 
       - uses: actions/setup-python@v5
@@ -27,10 +27,10 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - run: python ci.py 11 intraday
+      - run: python ci.py 11 intraday eod indicators screen
         env:
-          CTX: ${{ toJSON(secrets) }}
-          VARS: ${{ toJSON(vars) }}
+          CTX: ${{ secrets.CTX }}
+          VARS: ${{ secrets.VARS }}
 
   intraday-collect:
     needs: prepare
@@ -46,8 +46,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.REPO_NAME }}
-          token: ${{ secrets.REPO_TOKEN }}
+          repository: ${{ secrets.REPO }}
+          token: ${{ secrets.TOKEN }}
           ref: main
 
       - uses: actions/setup-python@v5
@@ -58,20 +58,75 @@ jobs:
 
       - run: python ci.py 7 ${{ matrix.shard }}
         env:
-          CTX: ${{ toJSON(secrets) }}
-          VARS: ${{ toJSON(vars) }}
+          CTX: ${{ secrets.CTX }}
+          VARS: ${{ secrets.VARS }}
 
-  daily-screen:
-    needs: intraday-collect
-    if: always()
+  ingest:
+    needs: prepare
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 120
 
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.REPO_NAME }}
-          token: ${{ secrets.REPO_TOKEN }}
+          repository: ${{ secrets.REPO }}
+          token: ${{ secrets.TOKEN }}
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt -r requirements-halal.txt
+
+      - run: python ci.py 13
+        env:
+          CTX: ${{ secrets.CTX }}
+          VARS: ${{ secrets.VARS }}
+
+  screen-shards:
+    needs: ingest
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    strategy:
+      max-parallel: 12
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.REPO }}
+          token: ${{ secrets.TOKEN }}
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      - run: python ci.py 14 ${{ matrix.shard }}
+        env:
+          CTX: ${{ secrets.CTX }}
+          VARS: ${{ secrets.VARS }}
+
+  finalize:
+    needs:
+      - intraday-collect
+      - screen-shards
+    if: always()
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.REPO }}
+          token: ${{ secrets.TOKEN }}
           ref: main
 
       - uses: actions/setup-python@v5
@@ -84,7 +139,7 @@ jobs:
 
       - run: pip install -r requirements.txt -r requirements-halal.txt
 
-      - run: python ci.py 1
+      - run: python ci.py 15
         env:
-          CTX: ${{ toJSON(secrets) }}
-          VARS: ${{ toJSON(vars) }}
+          CTX: ${{ secrets.CTX }}
+          VARS: ${{ secrets.VARS }}
