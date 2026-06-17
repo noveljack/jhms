@@ -17,8 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.REPO }}
-          token: ${{ secrets.TOKEN }}
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
           ref: main
 
       - uses: actions/setup-python@v5
@@ -29,8 +29,8 @@ jobs:
 
       - run: python ci.py 11 intraday eod indicators screen
         env:
-          CTX: ${{ secrets.CTX }}
-          VARS: ${{ secrets.VARS }}
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
 
   intraday-collect:
     needs: prepare
@@ -46,8 +46,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.REPO }}
-          token: ${{ secrets.TOKEN }}
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
           ref: main
 
       - uses: actions/setup-python@v5
@@ -58,8 +58,8 @@ jobs:
 
       - run: python ci.py 7 ${{ matrix.shard }}
         env:
-          CTX: ${{ secrets.CTX }}
-          VARS: ${{ secrets.VARS }}
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
 
   ingest:
     needs: prepare
@@ -69,8 +69,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.REPO }}
-          token: ${{ secrets.TOKEN }}
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
           ref: main
 
       - uses: actions/setup-python@v5
@@ -81,8 +81,8 @@ jobs:
 
       - run: python ci.py 13
         env:
-          CTX: ${{ secrets.CTX }}
-          VARS: ${{ secrets.VARS }}
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
 
   screen-shards:
     needs: ingest
@@ -98,8 +98,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.REPO }}
-          token: ${{ secrets.TOKEN }}
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
           ref: main
 
       - uses: actions/setup-python@v5
@@ -110,13 +110,14 @@ jobs:
 
       - run: python ci.py 14 ${{ matrix.shard }}
         env:
-          CTX: ${{ secrets.CTX }}
-          VARS: ${{ secrets.VARS }}
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
 
   finalize:
     needs:
       - intraday-collect
       - screen-shards
+
     if: always()
 
     runs-on: ubuntu-latest
@@ -125,8 +126,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.REPO }}
-          token: ${{ secrets.TOKEN }}
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
           ref: main
 
       - uses: actions/setup-python@v5
@@ -141,5 +142,5 @@ jobs:
 
       - run: python ci.py 15
         env:
-          CTX: ${{ secrets.CTX }}
-          VARS: ${{ secrets.VARS }}
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
