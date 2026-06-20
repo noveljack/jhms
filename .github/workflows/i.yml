@@ -3,7 +3,8 @@ name: i
 on:
   workflow_dispatch:
   repository_dispatch:
-    types: [i]
+    types:
+      - i
 
 concurrency:
   group: i
@@ -57,6 +58,29 @@ jobs:
       - run: pip install -r requirements.txt
 
       - run: python ci.py 10 ${{ matrix.shard }}
+        env:
+          CTX: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
+
+  reduce:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.REPO_NAME }}
+          token: ${{ secrets.REPO_TOKEN }}
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      - run: python ci.py 16
         env:
           CTX: ${{ toJSON(secrets) }}
           VARS: ${{ toJSON(vars) }}
