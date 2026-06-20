@@ -3,7 +3,8 @@ name: d
 on:
   workflow_dispatch:
   repository_dispatch:
-    types: [d]
+    types:
+      - d
 
 concurrency:
   group: d
@@ -25,9 +26,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-      - run: python ci.py 11 indicators
+      - name: Run prepare step
+        run: python ci.py 11 indicators
         env:
           CTX: ${{ toJSON(secrets) }}
           VARS: ${{ toJSON(vars) }}
@@ -36,12 +39,6 @@ jobs:
     needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 350
-
-    strategy:
-      max-parallel: 16
-      fail-fast: false
-      matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
     steps:
       - uses: actions/checkout@v4
@@ -54,9 +51,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-      - run: python ci.py 4 ${{ matrix.shard }}
+      - name: Run build step
+        run: python ci.py 4
         env:
           CTX: ${{ toJSON(secrets) }}
           VARS: ${{ toJSON(vars) }}
