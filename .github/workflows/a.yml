@@ -3,7 +3,8 @@ name: a
 on:
   workflow_dispatch:
   repository_dispatch:
-    types: [a]
+    types:
+      - a
 
 concurrency:
   group: a
@@ -53,7 +54,7 @@ jobs:
           path: ~/.cache/huggingface
           key: hf-kronos-NeoQuasar-Kronos-small-v1
 
-      - run: pip install 'huggingface-hub>=0.23'
+      - run: pip install "huggingface-hub>=0.23"
 
       - run: |
           python -c "from huggingface_hub import snapshot_download; snapshot_download('NeoQuasar/Kronos-small')"
@@ -182,6 +183,9 @@ jobs:
             --extra-index-url https://download.pytorch.org/whl/cpu \
             -r requirements-ml.txt \
             -r requirements-halal.txt
+
+          pip install -r requirements-patterns.txt || \
+            echo "TA-Lib wheel unavailable; screener falls back to pure-Python candlesticks"
 
       - run: python ci.py 15
         env:
